@@ -442,7 +442,7 @@ class VkBot:
         if need_end_game:
             end_game(game)
 
-    def choosing_collection_by_url_step(self, event, user, single=True):
+    def choosing_collection_by_url_step(self, event, user: models.VkUser):
         event_text = event.text
 
         if event_text == 'назад':
@@ -494,8 +494,10 @@ class VkBot:
                 image_words = [models.ImageWord(image=image, name=word) for word in words]
                 models.ImageWord.objects.bulk_create(image_words)
 
-        if single:
+        if user.current_game.single:
             self.start_single_game(user, collection=collection)
+        else:
+            self.start_multiplayer_game(user, collection=collection)
 
     def get_album_images(self, album_url):
         album_id = album_url.split('/')[-1].split('_')[1]
