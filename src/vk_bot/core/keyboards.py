@@ -55,6 +55,7 @@ def get_select_collection_keyboard():
     button_rows = [
         [KeyBoardButton(text='Загрузить свою', color=VkKeyboardColor.POSITIVE)],
         [KeyBoardButton(text='Стандартная')],
+        [KeyBoardButton(text='Основное меню', color=VkKeyboardColor.SECONDARY)]
     ]
     return get_keyboard(button_rows)
 
@@ -85,6 +86,21 @@ def get_connect_to_game_keyboard(game_id):
 def get_wait_circle_keyboard():
     button_rows = [
         [KeyBoardButton(text='Таблица результатов')],
+        [KeyBoardButton(text='Покинуть игру', color=VkKeyboardColor.NEGATIVE)]
+    ]
+    return get_keyboard(button_rows)
+
+
+def get_leave_game_keyboard():
+    button_rows = [
+        [KeyBoardButton(text='Покинуть игру', color=VkKeyboardColor.NEGATIVE)]
+    ]
+    return get_keyboard(button_rows)
+
+
+def get_start_multiplayer_game_keyboard():
+    button_rows = [
+        [KeyBoardButton(text='Начать игру', color=VkKeyboardColor.POSITIVE)],
         [KeyBoardButton(text='Покинуть игру', color=VkKeyboardColor.NEGATIVE)]
     ]
     return get_keyboard(button_rows)

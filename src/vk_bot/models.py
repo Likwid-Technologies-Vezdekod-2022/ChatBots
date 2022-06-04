@@ -65,9 +65,12 @@ class ImageWord(models.Model):
 
 
 class Game(models.Model):
-    collection = models.ForeignKey('Collection', on_delete=models.CASCADE)
-    status = models.CharField(choices=[('created', 'created'), ('started', 'started'), ('finished', 'finished')],
-                              default='created', max_length=400)
+    collection = models.ForeignKey('Collection', on_delete=models.CASCADE, blank=True, null=True)
+    status = models.CharField(
+        choices=[('creating', 'creating'), ('waiting', 'waiting'), ('started', 'started'), ('finished', 'finished')],
+        default='created', max_length=400)
+
+    creator = models.ForeignKey('VkUser', on_delete=models.PROTECT, related_name='created_games')
 
     stage = models.CharField(choices=[('getting_answers', 'getting_answers'),
                                       ('distribution_of_cards', 'distribution_of_cards')],
