@@ -20,8 +20,10 @@ class Command(BaseCommand):
         models.Collection.objects.filter(standard=True).delete()
         collection = models.Collection.objects.create(standard=True, words=standard_words)
         for image_data in standard_images:
-            collection.images.create(
+            image = collection.images.create(
                 attachment_data=image_data['attachment_data'],
             )
+            image_words = [models.ImageWord(image=image, name=word) for word in image_data['words']]
+            models.ImageWord.objects.bulk_create(image_words)
 
         logger.info('База данных инициализирована')

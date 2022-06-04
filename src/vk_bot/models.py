@@ -58,13 +58,25 @@ class ImageWord(models.Model):
         verbose_name_plural = 'Слова изображения'
         ordering = ['-update_date']
 
+    def __str__(self):
+        return f'{self.name}'
+
 
 class Game(models.Model):
     collection = models.ForeignKey('Collection', on_delete=models.CASCADE)
     status = models.CharField(choices=[('created', 'created'), ('started', 'started'), ('finished', 'finished')],
                               default='created', max_length=400)
 
+    stage = models.CharField(choices=[('getting_answers', 'getting_answers'),
+                                      ('distribution_of_cards', 'distribution_of_cards')],
+                             default='distribution_of_cards', max_length=400)
+
     single = models.BooleanField(default=False)
+
+    used_images = models.ManyToManyField('Image', blank=True)
+
+    current_images = models.ManyToManyField('Image', blank=True, related_name='current_images')
+    current_correct_answer = models.PositiveIntegerField(blank=True, null=True)
 
     creation_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)
