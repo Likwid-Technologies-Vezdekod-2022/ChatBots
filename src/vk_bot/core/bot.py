@@ -70,7 +70,12 @@ class VkBot:
         logger.info('Вк бот запущен...')
         for event in self.long_poll.listen():
             event: Event
-            self.event_handling(event)
+            try:
+                self.event_handling(event)
+            except:
+                self.send_message(user_id=event.user_id, text='Что-то пошло не так 😞\n\n'
+                                                              'Попробуйте позже или перезапустите бота командой "Старт"️\n'
+                                                              'Мы уже работает над исправлением проблемы ⚙️')
 
     def infinity_polling(self):
         """
