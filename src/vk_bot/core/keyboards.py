@@ -36,6 +36,16 @@ def get_answers_keyboard(count=5):
 
 def get_next_circle_keyboard():
     button_rows = [
-        [KeyBoardButton(text='Следующий круг')]
+        [KeyBoardButton(text='Следующий круг', color=VkKeyboardColor.POSITIVE)],
+        [KeyBoardButton(text='Результаты')],
+        [KeyBoardButton(text='Завершить игру', color=VkKeyboardColor.NEGATIVE)]
+    ]
+    return get_keyboard(button_rows)
+
+
+def main_menu_keyboard():
+    button_rows = [
+        [KeyBoardButton(text='Одиночная игра')],
+        [KeyBoardButton(text='Мультиплеер')]
     ]
     return get_keyboard(button_rows)

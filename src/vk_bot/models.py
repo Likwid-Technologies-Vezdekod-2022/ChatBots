@@ -6,6 +6,7 @@ class VkUser(models.Model):
     name = models.CharField(max_length=150, verbose_name='Имя', blank=True)
 
     current_game = models.ForeignKey('Game', on_delete=models.SET_NULL, null=True, blank=True)
+    current_score = models.PositiveIntegerField(default=0)
 
     creation_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)

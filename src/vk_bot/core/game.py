@@ -1,8 +1,16 @@
 import random
+from dataclasses import dataclass
+from typing import Union
 
 from django.db.models import Q
 
 from vk_bot import models
+
+
+@dataclass
+class GameCircle:
+    attachment_data: list
+    word: str
 
 
 class GameProcess:
@@ -10,14 +18,17 @@ class GameProcess:
         self.game = game
         self.collection = game.collection
 
-    def start_circle(self) -> tuple[list, str]:
-        words = self.collection.words
-        right_word = random.choice(words)
-
+    def start_circle(self) -> Union[GameCircle, None]:
         images = self.game.collection.images.order_by('?')
         used_images_ids = self.game.used_images.values_list('id', flat=True)
         if used_images_ids:
             images = images.exclude(id__in=used_images_ids)
+
+        if not images:
+            return
+
+        words = images.values_list('words__name', flat=True).distinct()
+        right_word = random.choice(words)
 
         print(used_images_ids)
         print(right_word)
@@ -43,4 +54,4 @@ class GameProcess:
         self.game.stage = 'getting_answers'
         self.game.save()
 
-        return attachment_data, right_word
+        return GameCircle(attachment_data=attachment_data, word=right_word)
