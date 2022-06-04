@@ -12,6 +12,7 @@ from config.settings import VK_TOKEN
 from vk_bot.core import keyboards
 from vk_bot import models
 from vk_bot.core.game import GameProcess
+from vk_bot.core.keyboards import KeyBoardButton
 
 if not VK_TOKEN:
     raise ValueError('VK_TOKEN не может быть пустым')
@@ -157,7 +158,7 @@ class VkBot:
 
             self.send_message(user_id=user.chat_id, text='Привет!',
                               photo_attachments=attachment_data)
-            self.send_message(user_id=user.chat_id, text=word)
+            self.send_message(user_id=user.chat_id, text=word, keyboard=keyboards.get_answers_keyboard())
             return
 
         current_game = user.current_game
@@ -168,14 +169,15 @@ class VkBot:
     def game_execution(self, user, game, event_text):
         if game.stage == 'getting_answers':
             if event_text not in ['1', '2', '3', '4', '5']:
-                self.send_message(user_id=user.chat_id, text='Воспользуйтесь клавиатурой или введите число от 1 до 5')
+                self.send_message(user_id=user.chat_id, text='Воспользуйтесь клавиатурой или введите число от 1 до 5',
+                                  keyboard=keyboards.get_answers_keyboard())
                 return
             user_answer = int(event_text)
 
             if user.current_game.current_correct_answer == user_answer:
-                self.send_message(user_id=user.chat_id, text='Хорош')
+                self.send_message(user_id=user.chat_id, text='Хорош', keyboard=keyboards.get_next_circle_keyboard())
             else:
-                self.send_message(user_id=user.chat_id, text='Не хорош')
+                self.send_message(user_id=user.chat_id, text='Не хорош', keyboard=keyboards.get_next_circle_keyboard())
 
             if game.single:
                 game.stage = 'distribution_of_cards'
@@ -189,7 +191,7 @@ class VkBot:
 
                 self.send_message(user_id=user.chat_id, text='Следующий круг',
                                   photo_attachments=attachment_data)
-                self.send_message(user_id=user.chat_id, text=word)
+                self.send_message(user_id=user.chat_id, text=word, keyboard=keyboards.get_answers_keyboard())
             return
 
 
