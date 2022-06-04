@@ -9,8 +9,8 @@ class KeyBoardButton:
     color: VkKeyboardColor = VkKeyboardColor.PRIMARY
 
 
-def get_keyboard(button_rows: list[list[KeyBoardButton]]):
-    keyboard = VkKeyboard()
+def get_keyboard(button_rows: list[list[KeyBoardButton]], inline=False):
+    keyboard = VkKeyboard(inline=inline)
     for row in button_rows:
         for button in row:
             keyboard.add_button(label=button.text, color=button.color)
@@ -62,5 +62,28 @@ def get_select_collection_keyboard():
 def get_back_keyboard():
     button_rows = [
         [KeyBoardButton(text='Назад', color=VkKeyboardColor.SECONDARY)]
+    ]
+    return get_keyboard(button_rows)
+
+
+def get_multiplayer_keyboard():
+    button_rows = [
+        [KeyBoardButton(text='Создать игру', color=VkKeyboardColor.POSITIVE)],
+        [KeyBoardButton(text='Найти игру')],
+    ]
+    return get_keyboard(button_rows)
+
+
+def get_connect_to_game_keyboard(game_id):
+    button_rows = [
+        [KeyBoardButton(text=f'Подключиться к игре #{game_id}')],
+    ]
+    return get_keyboard(button_rows, inline=True)
+
+
+def get_wait_circle_keyboard():
+    button_rows = [
+        [KeyBoardButton(text='Таблица результатов')],
+        [KeyBoardButton(text='Покинуть игру', color=VkKeyboardColor.NEGATIVE)]
     ]
     return get_keyboard(button_rows)

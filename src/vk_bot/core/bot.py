@@ -13,7 +13,7 @@ from config.logger import logger
 from config.settings import VK_BOT_TOKEN, VK_STANDALONE_APP_ID, VK_STANDALONE_APP_TOKEN
 from vk_bot.core import keyboards
 from vk_bot import models
-from vk_bot.core.game import GameProcess, clear_user_game_data, end_game
+from vk_bot.core.game import GameProcess, clear_user_game_data, end_game, get_game_results_table
 from vk_bot.core.keyboards import KeyBoardButton
 
 if not VK_BOT_TOKEN:
@@ -89,6 +89,8 @@ class VkBot:
         while True:
             try:
                 self.polling()
+            except KeyboardInterrupt:
+                exit(0)
             except Exception as e:
                 time.sleep(1)
                 continue
@@ -170,7 +172,43 @@ class VkBot:
                               keyboard=keyboards.get_select_collection_keyboard())
 
         elif event_text.lower() == 'мультиплеер':
-            self.send_in_development_message(user)
+            # self.send_in_development_message(user)
+
+            self.send_message(user_id=user.chat_id,
+                              text='Мультиплеер',
+                              keyboard=keyboards.get_multiplayer_keyboard())
+
+        elif event_text.lower() == 'найти игру':
+            games = models.Game.objects.filter(status__in=['created', 'started'], single=False)[:5]
+
+            if not games:
+                self.send_message(user_id=user.chat_id,
+                                  text=f'Сейчас нет активных игр 💁‍♂️\n'
+                                       f'Создайте свою 😉')
+
+            for game in games:
+                self.send_message(user_id=user.chat_id,
+                                  text=f'Игра #{game.id}\n'
+                                       f'Статус: {game.status}\n'
+                                       f'Игроки: {game.users.count()}',
+                                  keyboard=keyboards.get_connect_to_game_keyboard(game.id))
+        elif 'подключиться к игре ' in event_text.lower():
+            try:
+                game_id = int(event_text.split('#')[-1])
+            except:
+                self.send_message(user_id=user.chat_id,
+                                  text=f'Не удалось распознать игру',
+                                  keyboard=keyboards.get_main_menu_keyboard())
+                return
+
+            game = models.Game.objects.filter(id=game_id, status__in=['created', 'started'], single=False).first()
+            if not game:
+                self.send_message(user_id=user.chat_id,
+                                  text=f'Похоже игра к которой вы пытаетесь подключиться, уже завершилась',
+                                  keyboard=keyboards.get_multiplayer_keyboard())
+                return
+
+            self.connect_to_game(user=user, game=game)
 
         elif event_text.lower() == 'стандартная':
             collection = models.Collection.objects.filter(standard=True).first()
@@ -208,17 +246,43 @@ class VkBot:
                           keyboard=keyboards.get_answers_keyboard())
 
     def game_execution(self, user, game, event_text):
-        if event_text.lower() == 'результаты':
-            if game.single:
+        if game.single:
+            if event_text.lower() == 'результаты':
                 self.send_message(user_id=user.chat_id, text=f'Ваш счет в этой игре: {user.current_score} ✅',
                                   keyboard=keyboards.get_next_circle_keyboard())
-            return
-        elif event_text.lower() == 'завершить игру':
-            if game.stage:
+                return
+            elif event_text.lower() == 'завершить игру':
                 self.send_message(user_id=user.chat_id, text=f'Игра звершена\n'
                                                              f'Ваш счет: {user.current_score} ✅',
                                   keyboard=keyboards.get_main_menu_keyboard())
                 end_game(game)
+                return
+        else:
+            if event_text.lower() == 'таблица результатов':
+                self.send_message(user_id=user.chat_id, text=get_game_results_table(game=game, user=user),
+                                  keyboard=keyboards.get_wait_circle_keyboard())
+                return
+            elif event_text.lower() == 'покинуть игру':
+                self.send_message(user_id=user.chat_id, text=f'Вы покинули игру\n\n'
+                                                             f'{get_game_results_table(game=game, user=user)}',
+                                  keyboard=keyboards.get_main_menu_keyboard())
+                if game.users.count() <= 1:
+                    end_game(game)
+                else:
+                    clear_user_game_data(user)
+                return
+
+            if game.users.count() <= 1:
+                self.send_message(user_id=user.chat_id, text=f'Игра завершена, так как все игроки вышли\n\n'
+                                                             f'{get_game_results_table(game=game, user=user)}',
+                                  keyboard=keyboards.get_main_menu_keyboard())
+                end_game(game)
+                return
+
+        if not game.single and user.answered:
+            self.send_message(user_id=user.chat_id, text='Следующий круг начнется, '
+                                                         'когда все игроки ответят',
+                              keyboard=keyboards.get_wait_circle_keyboard())
             return
 
         if game.stage == 'getting_answers':
@@ -237,37 +301,66 @@ class VkBot:
                                'В этом раунде вы не зарабатываете очков'
 
             message_text += f'\n\nВаш счет в этой игре: {user.current_score} ✅'
+            if game.single:
+                self.send_message(user_id=user.chat_id, text=message_text,
+                                  keyboard=keyboards.get_next_circle_keyboard())
+            else:
+                self.send_message(user_id=user.chat_id, text=message_text)
+                self.send_message(user_id=user.chat_id, text='Следующий круг начнется, '
+                                                             'когда все игроки ответят',
+                                  keyboard=keyboards.get_wait_circle_keyboard())
 
-            self.send_message(user_id=user.chat_id, text=message_text, keyboard=keyboards.get_next_circle_keyboard())
+            user.answered = True
+            user.save()
+
+            if not game.single and game.users.all().count() == game.users.filter(answered=True).count():
+                self.distribution_of_cards_in_game(game=game, users=game.users.all())
+                return
 
             if game.single:
                 game.stage = 'distribution_of_cards'
                 game.save()
 
-            user.save()
-
             return
 
         if game.stage == 'distribution_of_cards':
-            if game.single:
-                game_process = GameProcess(game=game)
-                game_circle = game_process.start_circle()
-
-                if not game_circle:
-                    self.send_message(user_id=user.chat_id, text=f'Игра звершена!\n'
-                                                                 f'Ваш счет: {user.current_score} ✅\n\n'
-                                                                 f'Отличная работа 😉',
-                                      keyboard=keyboards.get_main_menu_keyboard())
-
-                    end_game(game)
-
-                    return
-
-                self.send_message(user_id=user.chat_id, text='Следующий круг',
-                                  photo_attachments=game_circle.attachment_data)
-                self.send_message(user_id=user.chat_id, text=game_circle.word,
-                                  keyboard=keyboards.get_answers_keyboard())
+            self.distribution_of_cards_in_game(game=game, users=[user])
             return
+
+    def distribution_of_cards_in_game(self, game, users):
+        game.stage = 'getting_answers'
+        game.save()
+
+        game_process = GameProcess(game=game)
+        game_circle = game_process.start_circle()
+
+        need_end_game = False
+        for game_user in users:
+            game_user.answered = False
+
+            if not game_circle:
+                if game.single:
+                    self.send_message(user_id=game_user.chat_id, text=f'Игра звершена!\n'
+                                                                      f'Ваш счет: {game_user.current_score} ✅\n\n'
+                                                                      f'Отличная работа 😉',
+                                      keyboard=keyboards.get_main_menu_keyboard())
+                else:
+                    self.send_message(user_id=game_user.chat_id, text=f'Игра звершена!\n'
+                                                                      f'{get_game_results_table(game=game, user=game_user)}\n\n'
+                                                                      f'Отличная работа 😉',
+                                      keyboard=keyboards.get_main_menu_keyboard())
+                need_end_game = True
+
+                continue
+            if not need_end_game:
+                self.send_message(user_id=game_user.chat_id, text='Следующий круг',
+                                  photo_attachments=game_circle.attachment_data)
+                self.send_message(user_id=game_user.chat_id, text=game_circle.word,
+                                  keyboard=keyboards.get_answers_keyboard())
+                game_user.save()
+
+        if need_end_game:
+            end_game(game)
 
     def choosing_collection_by_url_step(self, event, user, single=True):
         event_text = event.text
@@ -336,6 +429,20 @@ class VkBot:
         album_images = self.vk_standalone.method('photos.get', values)['items']
         album_images = [album_image for album_image in album_images if album_image['text']]
         return album_images
+
+    def connect_to_game(self, user, game):
+        user.current_game = game
+        user.current_score = 0
+        user.answered = False
+        user.save()
+
+        game_process = GameProcess(game=game)
+        game_circle = game_process.get_current_circle()
+
+        self.send_message(user_id=user.chat_id, text=f'Вы подключились к игре #{game.id}',
+                          photo_attachments=game_circle.attachment_data)
+        self.send_message(user_id=user.chat_id, text=game_circle.word,
+                          keyboard=keyboards.get_answers_keyboard())
 
 
 bot = VkBot(VK_BOT_TOKEN)

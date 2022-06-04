@@ -7,6 +7,7 @@ class VkUser(models.Model):
 
     current_game = models.ForeignKey('Game', on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
     current_score = models.PositiveIntegerField(default=0)
+    answered = models.BooleanField(default=False)
 
     creation_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)
@@ -77,6 +78,8 @@ class Game(models.Model):
     used_images = models.ManyToManyField('Image', blank=True)
 
     current_images = models.ManyToManyField('Image', blank=True, related_name='current_images')
+    current_attachment_data = models.JSONField(blank=True, null=True)
+    current_word = models.CharField(max_length=400, blank=True)
     current_correct_answer = models.PositiveIntegerField(blank=True, null=True)
 
     creation_date = models.DateTimeField(auto_now_add=True)

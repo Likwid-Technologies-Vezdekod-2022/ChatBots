@@ -51,6 +51,8 @@ class GameProcess:
         if len(attachment_data) < 5:
             return
 
+        self.game.current_attachment_data = attachment_data
+        self.game.current_word = right_word
         self.game.current_correct_answer = attachment_data.index(right_image.attachment_data) + 1
         print(self.game.current_correct_answer)
 
@@ -59,14 +61,33 @@ class GameProcess:
 
         return GameCircle(attachment_data=attachment_data, word=right_word)
 
+    def get_current_circle(self):
+        return GameCircle(attachment_data=self.game.current_attachment_data, word=self.game.current_word)
+
 
 def clear_user_game_data(user: models.VkUser):
     user.current_game = None
     user.current_score = 0
+    user.answered = False
     user.save()
 
 
 def end_game(game: models.Game):
     game.status = 'finished'
-    game.users.update(current_game=None, current_score=0)
+    game.users.update(current_game=None, current_score=0, answered=False)
     game.save()
+
+
+def get_game_results_table(game: models.Game, user: models.VkUser) -> str:
+    game_users = game.users.order_by('-current_score').distinct()
+
+    result = 'Общий счет\n===============\n'
+    i = 1
+    for game_user in game_users:
+        result += f'{i}. {game_user.name}. Счет: {game_user.current_score}'
+        if game_user == user:
+            result += ' ⬅️'
+        result += '\n'
+        i += 1
+
+    return result
