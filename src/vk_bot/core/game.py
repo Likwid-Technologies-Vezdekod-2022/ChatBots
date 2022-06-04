@@ -1,0 +1,46 @@
+import random
+
+from django.db.models import Q
+
+from vk_bot import models
+
+
+class GameProcess:
+    def __init__(self, game: models.Game):
+        self.game = game
+        self.collection = game.collection
+
+    def start_circle(self) -> tuple[list, str]:
+        words = self.collection.words
+        right_word = random.choice(words)
+
+        images = self.game.collection.images.order_by('?')
+        used_images_ids = self.game.used_images.values_list('id', flat=True)
+        if used_images_ids:
+            images = images.exclude(id__in=used_images_ids)
+
+        print(used_images_ids)
+        print(right_word)
+
+        other_images = images.filter(~Q(words__name=right_word))[:4]
+        print(other_images)
+        right_image: models.Image = images.filter(words__name=right_word).first()
+
+        self.game.used_images.add(*other_images)
+        self.game.used_images.add(right_image)
+
+        current_images = [right_image] + list(other_images)
+        self.game.current_images.set(current_images)
+
+        print(right_image, right_image.words.all())
+
+        attachment_data = [image.attachment_data for image in current_images]
+        random.shuffle(attachment_data, random.random)
+
+        self.game.current_correct_answer = attachment_data.index(right_image.attachment_data) + 1
+        print(self.game.current_correct_answer)
+
+        self.game.stage = 'getting_answers'
+        self.game.save()
+
+        return attachment_data, right_word
