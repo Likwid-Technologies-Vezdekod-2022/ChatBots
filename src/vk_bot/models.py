@@ -51,6 +51,8 @@ class Game(models.Model):
     status = models.CharField(choices=[('created', 'created'), ('started', 'started'), ('finished', 'finished')],
                               default='created', max_length=400)
 
+    single = models.BooleanField(default=False)
+
     creation_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)
 
