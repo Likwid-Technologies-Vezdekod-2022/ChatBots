@@ -55,10 +55,10 @@ class GameProcess:
         self.game.stage = 'getting_answers'
         self.game.save()
 
-        return GameCircle(attachment_data=attachment_data, word=right_word)
+        return GameCircle(attachment_data=attachment_data, word=f'Загаданное слово: {right_word.title}')
 
     def get_current_circle(self):
-        return GameCircle(attachment_data=self.game.current_attachment_data, word=self.game.current_word)
+        return GameCircle(attachment_data=self.game.current_attachment_data, word=f'Загаданное слово: {self.game.current_word.title()}')
 
 
 def clear_user_game_data(user: models.VkUser):
