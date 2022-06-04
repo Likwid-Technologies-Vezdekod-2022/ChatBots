@@ -23,11 +23,15 @@
     VK_STANDALONE_APP_ID=1234 # Id standalone Вк приложения
     VK_STANDALONE_APP_TOKEN=app_token # Token standalone Вк приложения
     ```
-3. Заполнить БД данными 
+3. Выполнить миграции
+   ```
+   python src/manage.py migrate
+   ```
+4. Заполнить БД данными 
    ```
    python src/manage.py init_db
    ```
-4. Запустить бота Вк
+5. Запустить бота Вк
    ```
    python src/manage.py start_vk_bot
    ```
