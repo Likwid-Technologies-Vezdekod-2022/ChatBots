@@ -12,7 +12,7 @@ from config.logger import logger
 from config.settings import VK_TOKEN
 from vk_bot.core import keyboards
 from vk_bot import models
-from vk_bot.core.game import GameProcess
+from vk_bot.core.game import GameProcess, clear_user_game_data, end_game
 from vk_bot.core.keyboards import KeyBoardButton
 
 if not VK_TOKEN:
@@ -165,7 +165,7 @@ class VkBot:
 
             self.send_message(user_id=user.chat_id, text='Привет!',
                               photo_attachments=game_circle.attachment_data)
-            self.send_message(user_id=user.chat_id, text=game_circle.attachment_data,
+            self.send_message(user_id=user.chat_id, text=game_circle.word,
                               keyboard=keyboards.get_answers_keyboard())
             return
 
@@ -194,6 +194,13 @@ class VkBot:
             if game.single:
                 self.send_message(user_id=user.chat_id, text=f'Ваш счет в этой игре: {user.current_score} ✅',
                                   keyboard=keyboards.get_next_circle_keyboard())
+            return
+        elif event_text.lower() == 'завершить игру':
+            if game.stage:
+                self.send_message(user_id=user.chat_id, text=f'Игра звершена\n'
+                                                             f'Ваш счет: {user.current_score} ✅',
+                                  keyboard=keyboards.main_menu_keyboard())
+                end_game(game)
             return
 
         if game.stage == 'getting_answers':
@@ -234,12 +241,7 @@ class VkBot:
                                                                  f'Отличная работа 😉',
                                       keyboard=keyboards.main_menu_keyboard())
 
-                    game.status = 'finished'
-                    game.save()
-
-                    user.current_game = None
-                    user.current_score = 0
-                    user.save()
+                    end_game(game)
 
                     return
 

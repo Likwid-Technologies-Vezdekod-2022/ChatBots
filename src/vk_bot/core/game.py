@@ -55,3 +55,15 @@ class GameProcess:
         self.game.save()
 
         return GameCircle(attachment_data=attachment_data, word=right_word)
+
+
+def clear_user_game_data(user: models.VkUser):
+    user.current_game = None
+    user.current_score = 0
+    user.save()
+
+
+def end_game(game: models.Game):
+    game.status = 'finished'
+    game.users.update(current_game=None, current_score=0)
+    game.save()

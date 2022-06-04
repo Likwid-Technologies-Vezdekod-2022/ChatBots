@@ -5,7 +5,7 @@ class VkUser(models.Model):
     chat_id = models.CharField(max_length=15, verbose_name='chat_id')
     name = models.CharField(max_length=150, verbose_name='Имя', blank=True)
 
-    current_game = models.ForeignKey('Game', on_delete=models.SET_NULL, null=True, blank=True)
+    current_game = models.ForeignKey('Game', on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
     current_score = models.PositiveIntegerField(default=0)
 
     creation_date = models.DateTimeField(auto_now_add=True)
