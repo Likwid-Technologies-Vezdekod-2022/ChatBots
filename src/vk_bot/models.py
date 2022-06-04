@@ -46,6 +46,19 @@ class Image(models.Model):
         ordering = ['-update_date']
 
 
+class ImageWord(models.Model):
+    image = models.ForeignKey('Image', on_delete=models.CASCADE, related_name='words')
+    name = models.TextField(db_index=True)
+
+    creation_date = models.DateTimeField(auto_now_add=True)
+    update_date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Слово изображения'
+        verbose_name_plural = 'Слова изображения'
+        ordering = ['-update_date']
+
+
 class Game(models.Model):
     collection = models.ForeignKey('Collection', on_delete=models.CASCADE)
     status = models.CharField(choices=[('created', 'created'), ('started', 'started'), ('finished', 'finished')],

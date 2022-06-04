@@ -26,3 +26,9 @@ class ImageAdmin(admin.ModelAdmin):
 class GameAdmin(admin.ModelAdmin):
     list_display = ('id', 'collection', 'status')
     ordering = ['-update_date']
+
+
+@admin.register(models.ImageWord)
+class ImageWordAdmin(admin.ModelAdmin):
+    list_display = ('id', 'image', 'name')
+    ordering = ['-update_date']
