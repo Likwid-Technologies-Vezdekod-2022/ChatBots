@@ -10,6 +10,7 @@ env = environ.Env(
     DEBUG=(bool, False),
     DATABASE_URL=(str, 'sqlite:///db.sqlite3'),
     ALLOWED_HOSTS=(list[str], ['localhost', '127.0.0.1']),
+    VK_TOKEN=(str, '')
 )
 
 environ.Env.read_env('.env')
@@ -29,6 +30,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'vk_bot',
 ]
 
 MIDDLEWARE = [
@@ -114,3 +116,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 MEDIA_URL = '/media/'
+
+VK_TOKEN = env('VK_TOKEN')
