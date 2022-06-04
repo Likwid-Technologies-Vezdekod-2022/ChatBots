@@ -1,7 +1,9 @@
 import random
 import time
+from typing import Union
 
 import vk_api
+from vk_api import VkUpload
 from vk_api.keyboard import VkKeyboard
 from vk_api.longpoll import VkLongPoll, VkEventType, Event
 
@@ -25,15 +27,12 @@ class VkBot:
     def __init__(self, token):
         self.vk = vk_api.VkApi(token=token)
         self.long_poll = VkLongPoll(self.vk)
+        self.upload = VkUpload(self.vk)
         self.next_step_users: {str: NextStep} = {}
 
-    def send_message(self, user_id: str, text, keyboard: VkKeyboard = None):
+    def send_message(self, user_id: str, text, keyboard: VkKeyboard = None, photo_attachments: list = None):
         """
         Отправка сообщения пользователю.
-        :param user_id:
-        :param text:
-        :param keyboard:
-        :return:
         """
 
         values = {
@@ -44,7 +43,22 @@ class VkBot:
 
         if keyboard:
             values['keyboard'] = keyboard.get_keyboard(),
+
+        if photo_attachments:
+            values['attachment'] = ','.join(photo_attachments)
         self.vk.method('messages.send', values)
+
+    def upload_photos(self, photo) -> list:
+        response = self.upload.photo_messages(photo)
+        attachments = ''
+        for img in response:
+            owner_id = img['owner_id']
+            photo_id = img['id']
+            access_key = img['access_key']
+            attachments += f'photo{owner_id}_{photo_id}_{access_key},'
+        if attachments:
+            attachments = attachments[:-1]
+        return attachments
 
     def polling(self):
         """
@@ -128,7 +142,9 @@ class VkBot:
 
         if event_text.lower() in ['начать', 'start']:
             text = self._get_start_message()
-            self.send_message(user_id=user.chat_id, text=text)
+            self.send_message(user_id=user.chat_id, text=text,
+                              photo_attachments=['photo-213713593_457239099_470dc3d70490e70b42',
+                                                 'photo-213713593_457239036_90255c46b69856db33'])
 
     @staticmethod
     def _get_start_message():
