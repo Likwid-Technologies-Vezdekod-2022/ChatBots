@@ -161,7 +161,11 @@ class VkBot:
 
             user.current_game = models.Game.objects.create(single=True, status='creating', stage='getting_answers',
                                                            creator=user)
-            self.start_single_game(user=user, collection=collection, start_text='Привет!')
+            self.start_single_game(user=user, collection=collection, start_text='Привет!\n'
+                                                                                'Добро пожаловть в чат бота с игрой "Имаджинариум"\n\n'
+                                                                                'Задача игры - угадать какую картинку я загадал\n'
+                                                                                'Укажите номер изображения на котором изображено слово '
+                                                                                '(номера считаются с лева на право)')
             return
 
         current_game = user.current_game
