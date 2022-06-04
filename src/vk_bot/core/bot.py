@@ -11,6 +11,7 @@ from config.logger import logger
 from config.settings import VK_TOKEN
 from vk_bot.core import keyboards
 from vk_bot import models
+from vk_bot.core.game import GameProcess
 
 if not VK_TOKEN:
     raise ValueError('VK_TOKEN не может быть пустым')
@@ -141,15 +142,55 @@ class VkBot:
         event_text = event.text
 
         if event_text.lower() in ['начать', 'start']:
-            text = self._get_start_message()
-            self.send_message(user_id=user.chat_id, text=text,
-                              photo_attachments=['photo-213713593_457239099_470dc3d70490e70b42',
-                                                 'photo-213713593_457239036_90255c46b69856db33'])
+            collection = models.Collection.objects.filter(standard=True).first()
+            if not collection:
+                self.send_message(user_id=user.chat_id, text='Чат бот в разработке 😉')
 
-    @staticmethod
-    def _get_start_message():
-        start_message = 'Привет!'
-        return start_message
+            game = models.Game.objects.create(single=True, collection=collection, status='started',
+                                              stage='getting_answers')
+            user.current_game = game
+            user.save()
+
+            game_process = GameProcess(game=game)
+            attachment_data, word = game_process.start_circle()
+            print('ababa')
+
+            self.send_message(user_id=user.chat_id, text='Привет!',
+                              photo_attachments=attachment_data)
+            self.send_message(user_id=user.chat_id, text=word)
+            return
+
+        current_game = user.current_game
+        if current_game:
+            self.game_execution(user=user, game=current_game, event_text=event_text)
+            return
+
+    def game_execution(self, user, game, event_text):
+        if game.stage == 'getting_answers':
+            if event_text not in ['1', '2', '3', '4', '5']:
+                self.send_message(user_id=user.chat_id, text='Воспользуйтесь клавиатурой или введите число от 1 до 5')
+                return
+            user_answer = int(event_text)
+
+            if user.current_game.current_correct_answer == user_answer:
+                self.send_message(user_id=user.chat_id, text='Хорош')
+            else:
+                self.send_message(user_id=user.chat_id, text='Не хорош')
+
+            if game.single:
+                game.stage = 'distribution_of_cards'
+                game.save()
+            return
+
+        if game.stage == 'distribution_of_cards':
+            if game.single:
+                game_process = GameProcess(game=game)
+                attachment_data, word = game_process.start_circle()
+
+                self.send_message(user_id=user.chat_id, text='Следующий круг',
+                                  photo_attachments=attachment_data)
+                self.send_message(user_id=user.chat_id, text=word)
+            return
 
 
 bot = VkBot(VK_TOKEN)
