@@ -22,7 +22,7 @@ class VkUser(models.Model):
 
 class Collection(models.Model):
     standard = models.BooleanField(default=False)
-    words = models.JSONField()
+    album_url = models.TextField(blank=True)
 
     creation_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)

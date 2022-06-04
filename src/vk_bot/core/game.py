@@ -67,3 +67,4 @@ def end_game(game: models.Game):
     game.status = 'finished'
     game.users.update(current_game=None, current_score=0)
     game.save()
+

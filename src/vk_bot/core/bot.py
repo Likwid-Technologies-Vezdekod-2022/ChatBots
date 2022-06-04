@@ -1,6 +1,7 @@
 import random
 import time
 import traceback
+from pprint import pprint
 from typing import Union
 
 import vk_api
@@ -9,13 +10,13 @@ from vk_api.keyboard import VkKeyboard
 from vk_api.longpoll import VkLongPoll, VkEventType, Event
 
 from config.logger import logger
-from config.settings import VK_TOKEN
+from config.settings import VK_BOT_TOKEN, VK_STANDALONE_APP_ID, VK_STANDALONE_APP_TOKEN
 from vk_bot.core import keyboards
 from vk_bot import models
 from vk_bot.core.game import GameProcess, clear_user_game_data, end_game
 from vk_bot.core.keyboards import KeyBoardButton
 
-if not VK_TOKEN:
+if not VK_BOT_TOKEN:
     raise ValueError('VK_TOKEN не может быть пустым')
 
 
@@ -28,9 +29,10 @@ class NextStep:
 
 class VkBot:
     def __init__(self, token):
-        self.vk = vk_api.VkApi(token=token)
-        self.long_poll = VkLongPoll(self.vk)
-        self.upload = VkUpload(self.vk)
+        self.vk_bot = vk_api.VkApi(token=token)
+        self.vk_standalone = vk_api.VkApi(app_id=VK_STANDALONE_APP_ID, token=VK_STANDALONE_APP_TOKEN)
+        self.long_poll = VkLongPoll(self.vk_bot)
+        self.upload = VkUpload(self.vk_bot)
         self.next_step_users: {str: NextStep} = {}
 
     def send_message(self, user_id: str, text, keyboard: VkKeyboard = None, photo_attachments: list = None):
@@ -49,7 +51,7 @@ class VkBot:
 
         if photo_attachments:
             values['attachment'] = ','.join(photo_attachments)
-        self.vk.method('messages.send', values)
+        self.vk_bot.method('messages.send', values)
 
     def upload_photos(self, photo) -> list:
         response = self.upload.photo_messages(photo)
@@ -97,7 +99,7 @@ class VkBot:
         :param event:
         :return:
         """
-        user = self.vk.method("users.get", {"user_ids": event.user_id})
+        user = self.vk_bot.method("users.get", {"user_ids": event.user_id})
         fullname = user[0]['first_name'] + ' ' + user[0]['last_name']
         try:
             user_object = models.VkUser.objects.get(chat_id=event.user_id)
@@ -127,7 +129,7 @@ class VkBot:
         if self.next_step_users.get(user_id):
             next_step = self.next_step_users[user_id]
             del self.next_step_users[user_id]
-            next_step.callback(event, *next_step.args, **next_step.kwargs)
+            next_step.callback(event, user, *next_step.args, **next_step.kwargs)
             return True
 
     def event_handling(self, event):
@@ -267,13 +269,73 @@ class VkBot:
                                   keyboard=keyboards.get_answers_keyboard())
             return
 
-    def choosing_collection_by_url_step(self, event):
-        if event.text.lower() == 'назад':
+    def choosing_collection_by_url_step(self, event, user, single=True):
+        event_text = event.text
+
+        if event_text == 'назад':
             self.send_message(user_id=event.user_id, text='Тогда в другой раз😊')
             self.send_message(user_id=event.user_id,
                               text='Выберите коллекцию изображений',
                               keyboard=keyboards.get_select_collection_keyboard())
             return
 
+        album_url = event_text
 
-bot = VkBot(VK_TOKEN)
+        try:
+            album_images = self.get_album_images(album_url=event_text)
+        except:
+            self.send_message(user_id=event.user_id,
+                              text='Не удалось получить изображения из альбома\n'
+                                   'Указана некорректная ссылка, либо альбом является закрытым\n\n'
+                                   'Отправьте ссылку на альбом',
+                              keyboard=keyboards.get_back_keyboard())
+            self.register_next_step(event, self.choosing_collection_by_url_step)
+            return
+
+        album_images_count = len(album_images)
+        if album_images_count < 6:
+            self.send_message(user_id=event.user_id,
+                              text='В этом альбоме слишком мало изображений с описанием\n'
+                                   'Укажите другой альбом', keyboard=keyboards.get_back_keyboard())
+            self.register_next_step(event, self.choosing_collection_by_url_step)
+            return
+
+        collection = models.Collection.objects.get_or_create(standard=False, album_url=album_url)[0]
+
+        if collection.images.count() != album_images_count:
+            collection.images.all().delete()
+
+            for album_image in album_images:
+                owner_id = album_image['owner_id']
+                photo_id = album_image['id']
+
+                photo_text: str = album_image['text']
+                if not photo_text:
+                    continue
+                words = photo_text.lower().split()
+
+                image = collection.images.create(
+                    attachment_data=f'photo{owner_id}_{photo_id}'
+                )
+
+                image_words = [models.ImageWord(image=image, name=word) for word in words]
+                models.ImageWord.objects.bulk_create(image_words)
+
+        if single:
+            self.start_single_game(user, collection=collection)
+
+    def get_album_images(self, album_url):
+        album_id = album_url.split('/')[-1].split('_')[1]
+        owner_id = album_url.split('/')[-1].split('_')[0].replace('album', '')
+
+        values = {
+            'owner_id': owner_id,
+            'album_id': album_id
+        }
+
+        album_images = self.vk_standalone.method('photos.get', values)['items']
+        album_images = [album_image for album_image in album_images if album_image['text']]
+        return album_images
+
+
+bot = VkBot(VK_BOT_TOKEN)
