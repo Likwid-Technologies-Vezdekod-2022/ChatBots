@@ -3,7 +3,7 @@ import time
 
 import vk_api
 from vk_api.keyboard import VkKeyboard
-from vk_api.longpoll import VkLongPoll, VkEventType
+from vk_api.longpoll import VkLongPoll, VkEventType, Event
 
 from config.logger import logger
 from config.settings import VK_TOKEN
@@ -53,6 +53,7 @@ class VkBot:
         """
         logger.info('Вк бот запущен...')
         for event in self.long_poll.listen():
+            event: Event
             self.event_handling(event)
 
     def infinity_polling(self):
@@ -112,6 +113,7 @@ class VkBot:
         """
         if event.to_me:
             user = self.get_user(event)
+            logger.info(f'New event [user: {user}, type: {event.type}]: "{event.text}"')
             if self.processing_next_step(event, user):
                 return
             elif event.type == VkEventType.MESSAGE_NEW:

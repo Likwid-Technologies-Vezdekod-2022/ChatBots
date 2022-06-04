@@ -14,4 +14,4 @@ class VkUser(models.Model):
         ordering = ['-update_date']
 
     def __str__(self):
-        return f'{self.chat_id}'
+        return f'{self.chat_id} ({self.name})'
