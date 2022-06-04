@@ -48,6 +48,9 @@ class GameProcess:
         attachment_data = [image.attachment_data for image in current_images]
         random.shuffle(attachment_data, random.random)
 
+        if len(attachment_data) < 5:
+            return
+
         self.game.current_correct_answer = attachment_data.index(right_image.attachment_data) + 1
         print(self.game.current_correct_answer)
 
@@ -67,4 +70,3 @@ def end_game(game: models.Game):
     game.status = 'finished'
     game.users.update(current_game=None, current_score=0)
     game.save()
-
