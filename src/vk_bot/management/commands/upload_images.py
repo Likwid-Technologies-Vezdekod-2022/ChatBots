@@ -1,15 +1,17 @@
 import json
+import os
 
 from django.core.management.base import BaseCommand
 
 from config.logger import logger
+from config.settings import BASE_DIR
 from vk_bot.core.bot import bot
 
 
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
-        with open(r'data/words.txt') as f:
+        with open(os.path.join(BASE_DIR, r'data/words.txt')) as f:
             uploaded_files = []
             all_words = []
             i = 0
@@ -32,8 +34,8 @@ class Command(BaseCommand):
                     'attachment_data': attachment
                 })
 
-        with open('data/standard_images.json', 'w', encoding='utf-8') as f:
+        with open(os.path.join(BASE_DIR, 'data/standard_images.json'), 'w', encoding='utf-8') as f:
             json.dump(uploaded_files, f, indent=4, ensure_ascii=False)
 
-        with open('data/standard_words.json', 'w', encoding='utf-8') as f:
+        with open(os.path.join(BASE_DIR, 'data/standard_words.json'), 'w', encoding='utf-8') as f:
             json.dump(list(set(all_words)), f, indent=4, ensure_ascii=False)

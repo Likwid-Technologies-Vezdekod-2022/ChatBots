@@ -13,7 +13,7 @@ env = environ.Env(
     VK_TOKEN=(str, '')
 )
 
-environ.Env.read_env('.env')
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = env('SECRET_KEY')
 
