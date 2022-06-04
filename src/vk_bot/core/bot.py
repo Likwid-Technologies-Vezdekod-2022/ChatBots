@@ -219,6 +219,11 @@ class VkBot:
                               text='Отправьте ссылку на альбом с изображениями', keyboard=keyboards.get_back_keyboard())
             self.register_next_step(event, self.choosing_collection_by_url_step)
 
+        elif event_text.lower() == 'основное меню':
+            self.send_message(user_id=user.chat_id,
+                              text='Основное меню',
+                              keyboard=keyboards.get_main_menu_keyboard())
+
         else:
             self.send_not_understand_message(user)
 
