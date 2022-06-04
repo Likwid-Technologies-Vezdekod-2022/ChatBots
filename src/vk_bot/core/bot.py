@@ -1,5 +1,6 @@
 import random
 import time
+import traceback
 from typing import Union
 
 import vk_api
@@ -73,6 +74,7 @@ class VkBot:
             try:
                 self.event_handling(event)
             except:
+                logger.error(traceback.format_exc())
                 self.send_message(user_id=event.user_id, text='Что-то пошло не так 😞\n\n'
                                                               'Попробуйте позже или перезапустите бота командой "Старт"️\n'
                                                               'Мы уже работает над исправлением проблемы ⚙️')
