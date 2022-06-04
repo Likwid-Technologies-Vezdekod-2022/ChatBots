@@ -43,9 +43,24 @@ def get_next_circle_keyboard():
     return get_keyboard(button_rows)
 
 
-def main_menu_keyboard():
+def get_main_menu_keyboard():
     button_rows = [
         [KeyBoardButton(text='Одиночная игра')],
         [KeyBoardButton(text='Мультиплеер')]
+    ]
+    return get_keyboard(button_rows)
+
+
+def get_select_collection_keyboard():
+    button_rows = [
+        [KeyBoardButton(text='Загрузить свою', color=VkKeyboardColor.POSITIVE)],
+        [KeyBoardButton(text='Стандартная')],
+    ]
+    return get_keyboard(button_rows)
+
+
+def get_back_keyboard():
+    button_rows = [
+        [KeyBoardButton(text='Назад', color=VkKeyboardColor.SECONDARY)]
     ]
     return get_keyboard(button_rows)

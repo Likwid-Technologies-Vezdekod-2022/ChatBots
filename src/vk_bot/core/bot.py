@@ -154,19 +154,7 @@ class VkBot:
             if not collection:
                 self.send_message(user_id=user.chat_id, text='Чат бот в разработке 😉')
 
-            game = models.Game.objects.create(single=True, collection=collection, status='started',
-                                              stage='getting_answers')
-            user.current_game = game
-            user.current_score = 0
-            user.save()
-
-            game_process = GameProcess(game=game)
-            game_circle = game_process.start_circle()
-
-            self.send_message(user_id=user.chat_id, text='Привет!',
-                              photo_attachments=game_circle.attachment_data)
-            self.send_message(user_id=user.chat_id, text=game_circle.word,
-                              keyboard=keyboards.get_answers_keyboard())
+            self.start_single_game(user=user, collection=collection, start_text='Привет!')
             return
 
         current_game = user.current_game
@@ -175,9 +163,22 @@ class VkBot:
             return
 
         if event_text.lower() == 'одиночная игра':
-            pass
+            self.send_message(user_id=user.chat_id,
+                              text='Выберите коллекцию изображений',
+                              keyboard=keyboards.get_select_collection_keyboard())
+
         elif event_text.lower() == 'мультиплеер':
             self.send_in_development_message(user)
+
+        elif event_text.lower() == 'стандартная':
+            collection = models.Collection.objects.filter(standard=True).first()
+            self.start_single_game(user, collection=collection)
+
+        elif event_text.lower() == 'загрузить свою':
+            self.send_message(user_id=user.chat_id,
+                              text='Отправьте ссылку на альбом с изображениями', keyboard=keyboards.get_back_keyboard())
+            self.register_next_step(event, self.choosing_collection_by_url_step)
+
         else:
             self.send_not_understand_message(user)
 
@@ -187,7 +188,22 @@ class VkBot:
     def send_not_understand_message(self, user):
         self.send_message(user_id=user.chat_id, text=f'Я вас не понял 🙈\n'
                                                      f'Воспользуйтесь клавиатурой😉',
-                          keyboard=keyboards.main_menu_keyboard())
+                          keyboard=keyboards.get_main_menu_keyboard())
+
+    def start_single_game(self, user, collection: models.Collection, start_text: str = 'Начинаем новую игру! 😎'):
+        game = models.Game.objects.create(single=True, collection=collection, status='started',
+                                          stage='getting_answers')
+        user.current_game = game
+        user.current_score = 0
+        user.save()
+
+        game_process = GameProcess(game=game)
+        game_circle = game_process.start_circle()
+
+        self.send_message(user_id=user.chat_id, text=start_text,
+                          photo_attachments=game_circle.attachment_data)
+        self.send_message(user_id=user.chat_id, text=game_circle.word,
+                          keyboard=keyboards.get_answers_keyboard())
 
     def game_execution(self, user, game, event_text):
         if event_text.lower() == 'результаты':
@@ -199,7 +215,7 @@ class VkBot:
             if game.stage:
                 self.send_message(user_id=user.chat_id, text=f'Игра звершена\n'
                                                              f'Ваш счет: {user.current_score} ✅',
-                                  keyboard=keyboards.main_menu_keyboard())
+                                  keyboard=keyboards.get_main_menu_keyboard())
                 end_game(game)
             return
 
@@ -239,7 +255,7 @@ class VkBot:
                     self.send_message(user_id=user.chat_id, text=f'Игра звершена!\n'
                                                                  f'Ваш счет: {user.current_score} ✅\n\n'
                                                                  f'Отличная работа 😉',
-                                      keyboard=keyboards.main_menu_keyboard())
+                                      keyboard=keyboards.get_main_menu_keyboard())
 
                     end_game(game)
 
@@ -249,6 +265,14 @@ class VkBot:
                                   photo_attachments=game_circle.attachment_data)
                 self.send_message(user_id=user.chat_id, text=game_circle.word,
                                   keyboard=keyboards.get_answers_keyboard())
+            return
+
+    def choosing_collection_by_url_step(self, event):
+        if event.text.lower() == 'назад':
+            self.send_message(user_id=event.user_id, text='Тогда в другой раз😊')
+            self.send_message(user_id=event.user_id,
+                              text='Выберите коллекцию изображений',
+                              keyboard=keyboards.get_select_collection_keyboard())
             return
 
 
