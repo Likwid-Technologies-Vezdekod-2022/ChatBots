@@ -1,8 +1,6 @@
 import random
 import time
 import traceback
-from pprint import pprint
-from typing import Union
 
 import vk_api
 from vk_api import VkUpload
@@ -14,10 +12,15 @@ from config.settings import VK_BOT_TOKEN, VK_STANDALONE_APP_ID, VK_STANDALONE_AP
 from vk_bot.core import keyboards
 from vk_bot import models
 from vk_bot.core.game import GameProcess, clear_user_game_data, end_game, get_game_results_table
-from vk_bot.core.keyboards import KeyBoardButton
 
 if not VK_BOT_TOKEN:
     raise ValueError('VK_TOKEN не может быть пустым')
+
+if not VK_STANDALONE_APP_ID:
+    raise ValueError('VK_STANDALONE_APP_ID не может быть пустым')
+
+if not VK_STANDALONE_APP_TOKEN:
+    raise ValueError('VK_STANDALONE_APP_TOKEN не может быть пустым')
 
 
 class NextStep:

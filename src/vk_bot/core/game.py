@@ -4,6 +4,7 @@ from typing import Union
 
 from django.db.models import Q
 
+from config.logger import logger
 from vk_bot import models
 
 
@@ -30,11 +31,8 @@ class GameProcess:
         words = images.values_list('words__name', flat=True).distinct()
         right_word = random.choice(words)
 
-        print(used_images_ids)
-        print(right_word)
 
         other_images = images.filter(~Q(words__name=right_word))[:4]
-        print(other_images)
         right_image: models.Image = images.filter(words__name=right_word).first()
 
         self.game.used_images.add(*other_images)
@@ -42,8 +40,6 @@ class GameProcess:
 
         current_images = [right_image] + list(other_images)
         self.game.current_images.set(current_images)
-
-        print(right_image, right_image.words.all())
 
         attachment_data = [image.attachment_data for image in current_images]
         random.shuffle(attachment_data, random.random)
@@ -54,7 +50,7 @@ class GameProcess:
         self.game.current_attachment_data = attachment_data
         self.game.current_word = right_word
         self.game.current_correct_answer = attachment_data.index(right_image.attachment_data) + 1
-        print(self.game.current_correct_answer)
+        logger.info(f'game: {self.game.id }, current_correct_answer: {self.game.current_correct_answer}')
 
         self.game.stage = 'getting_answers'
         self.game.save()
