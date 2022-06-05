@@ -1,7 +1,7 @@
 # ChatBots
 
 ### Стэк
-- Python
+- Python >= 3.9
 - Django
 - vk_api
 
