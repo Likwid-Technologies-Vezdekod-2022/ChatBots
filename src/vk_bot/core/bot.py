@@ -156,6 +156,7 @@ class VkBot:
         event_text = event.text
 
         if event_text.lower() in ['начать', 'start']:
+            clear_user_game_data(user=user)
             collection = models.Collection.objects.filter(standard=True).first()
             if not collection:
                 self.send_message(user_id=user.chat_id, text='Чат бот в разработке 😉')
