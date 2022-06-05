@@ -31,7 +31,6 @@ class GameProcess:
         words = images.values_list('words__name', flat=True).distinct()
         right_word = random.choice(words)
 
-
         other_images = images.filter(~Q(words__name=right_word))[:4]
         right_image: models.Image = images.filter(words__name=right_word).first()
 
@@ -50,7 +49,7 @@ class GameProcess:
         self.game.current_attachment_data = attachment_data
         self.game.current_word = right_word
         self.game.current_correct_answer = attachment_data.index(right_image.attachment_data) + 1
-        logger.info(f'game: {self.game.id }, current_correct_answer: {self.game.current_correct_answer}')
+        logger.info(f'game: {self.game.id}, current_correct_answer: {self.game.current_correct_answer}')
 
         self.game.stage = 'getting_answers'
         self.game.save()
@@ -58,19 +57,24 @@ class GameProcess:
         return GameCircle(attachment_data=attachment_data, word=f'Загаданное слово: {right_word}')
 
     def get_current_circle(self):
-        return GameCircle(attachment_data=self.game.current_attachment_data, word=f'Загаданное слово: {self.game.current_word}')
+        return GameCircle(attachment_data=self.game.current_attachment_data,
+                          word=f'Загаданное слово: {self.game.current_word}')
 
 
 def clear_user_game_data(user: models.VkUser):
     user.current_game = None
     user.current_score = 0
     user.answered = False
+    user.is_game_host = False
     user.save()
 
 
 def end_game(game: models.Game):
     game.status = 'finished'
-    game.users.update(current_game=None, current_score=0, answered=False)
+    game.users.update(current_game=None,
+                      current_score=0,
+                      answered=False,
+                      is_game_host=False)
     game.save()
 
 

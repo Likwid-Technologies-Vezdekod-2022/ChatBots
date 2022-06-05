@@ -9,6 +9,12 @@ class VkUser(models.Model):
     current_score = models.PositiveIntegerField(default=0)
     answered = models.BooleanField(default=False)
 
+    # для игры с ведущим
+    is_game_host = models.BooleanField(default=False)
+    was_game_circle_host = models.BooleanField(default=False)
+    cards_in_hand = models.ManyToManyField('Image', blank=True, related_name='cards_in_hand')
+    current_card_number = models.PositiveIntegerField(blank=True, null=True)
+
     creation_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)
 
@@ -84,6 +90,8 @@ class Game(models.Model):
     current_attachment_data = models.JSONField(blank=True, null=True)
     current_word = models.CharField(max_length=400, blank=True)
     current_correct_answer = models.PositiveIntegerField(blank=True, null=True)
+
+    with_host = models.BooleanField(default=False)
 
     creation_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)
