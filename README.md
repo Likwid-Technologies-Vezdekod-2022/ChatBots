@@ -15,7 +15,7 @@
 
 1. Установить зависимости (в виртуальном окружении python)
     ```
-    pip install -r requirements.txt
+    pip install -r src/requirements.txt
     ```
 2. Создать и заполнить файл с переменными окружения `src/.env`
     ```
