@@ -805,8 +805,5 @@ class VkBot:
             self.game_host_move(host)
         self.send_message(user_id=host.chat_id, text=f'Введите слово, которое обозначет то, что изображено на карте')
 
-    def distribution_of_cards_in_game_with_host(self, game, event_text):
-        pass
-
 
 bot = VkBot(VK_BOT_TOKEN)
