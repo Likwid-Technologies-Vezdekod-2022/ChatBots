@@ -80,6 +80,16 @@ class GameProcess:
 
             i += i + users_count
 
+    def give_game_users_one_card(self):
+        users = self.game.users.all()
+        images = self.game.collection.images.order_by('?')
+
+        i = 0
+        for user in users:
+            user.cards_in_hand.add(images[i])
+            self.game.used_images.add(images[i])
+            i += 1
+
     def start_circle_with_host(self, ) -> Union[GameCircle, None]:
         images = self.game.collection.images.order_by('?')
         used_images_ids = self.game.used_images.values_list('id', flat=True)
@@ -123,6 +133,7 @@ def clear_user_game_data(user: models.VkUser):
     user.current_score = 0
     user.answered = False
     user.is_game_host = False
+    user.answer = None
     user.save()
 
 
@@ -131,7 +142,8 @@ def end_game(game: models.Game):
     game.users.update(current_game=None,
                       current_score=0,
                       answered=False,
-                      is_game_host=False)
+                      is_game_host=False,
+                      answer=None)
     game.save()
 
 

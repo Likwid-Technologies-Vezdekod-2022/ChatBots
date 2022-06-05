@@ -570,11 +570,35 @@ class VkBot:
                 for game_user, score in users_card_answers.items():
                     users_card_answers_table += f'\n{game_user} {score}'
 
+                won_user = None
                 for game_user in game_users:
+                    if game_user.current_score >= 40:
+                        won_user = game_user
+
                     self.send_message(user_id=game_user.chat_id,
                                       text=f'Баллы в этом круге:\n {users_card_answers_table}\n\n'
                                            f'{get_game_results_table(game=game, user=game_user)}\n\n'
                                            f'Отличная работа 😉')
+
+                    game_user.cards_in_hand.remove(game_user.answer)
+                    game_user.is_game_host = False
+                    game_user.answered = False
+                    game_user.sent_card = None
+                    game_user.answer = None
+                    game_user.save()
+
+                if won_user:
+                    end_game(game=game)
+                    self.send_message(user_id=won_user.chat_id,
+                                      text=f'Игра завершена!\n'
+                                           f'Победитель: {won_user.name} 🥳')
+
+                    return
+
+                game_process = GameProcess(game=game)
+                game_process.give_game_users_one_card()
+                self.game_host_move(game)
+
             return
 
 
@@ -751,6 +775,8 @@ class VkBot:
         for user in game_users:
             if start_game:
                 self.send_message(user_id=user.chat_id, text='Игра началась!')
+            else:
+                self.send_message(user_id=user.chat_id, text='Начинаем новый круг!')
 
             photo_attachments = [image.attachment_data for image in user.cards_in_hand.all()]
 
@@ -765,6 +791,7 @@ class VkBot:
                                   photo_attachments=photo_attachments,
                                   keyboard=keyboards.get_wait_circle_keyboard())
 
+        game.current_images.remove()
         game.stage = 'game_host_writing_word'
         game.save()
 
