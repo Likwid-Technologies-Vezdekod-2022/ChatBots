@@ -14,7 +14,7 @@ class VkUser(models.Model):
     was_game_circle_host = models.BooleanField(default=False)
     cards_in_hand = models.ManyToManyField('Image', blank=True, related_name='cards_in_hand')
     sent_card = models.ForeignKey('Image', blank=True, null=True, on_delete=models.PROTECT, related_name='sent_cards')
-    current_card_number = models.PositiveIntegerField(blank=True, null=True)
+    answer = models.PositiveIntegerField(blank=True, null=True)
 
     creation_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)

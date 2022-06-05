@@ -352,6 +352,7 @@ class VkBot:
                     return
                 self.send_message(user_id=user.chat_id,
                                   text=f'Введите слово, которое обозначет то, что изображено на карте')
+                game.current_images.add(user.sent_card)
                 game.stage = 'sending_word'
                 game.save()
             else:
@@ -365,7 +366,8 @@ class VkBot:
                 game.current_word = event_text
 
                 self.send_message(user_id=user.chat_id, text='Отлично!\n'
-                                                             'Теперь дождитесь пока все сделают свой ход')
+                                                             'Теперь дождитесь пока все сделают свой ход',
+                                  keyboard=keyboards.get_wait_circle_keyboard())
 
                 for game_user in game.users.exclude(is_game_host=True):
                     self.send_message(user_id=game_user.chat_id,
@@ -380,7 +382,52 @@ class VkBot:
             return
 
         elif game.stage == 'send_cards':
-            pass
+            if user.is_game_host:
+                self.send_message(user_id=user.chat_id, text='Дождитесь пока все сделают свой ход',
+                                  keyboard=keyboards.get_wait_circle_keyboard())
+                return
+            else:
+                try:
+                    user.sent_card = user.cards_in_hand.all()[int(event_text) - 1]
+                    user.save()
+                except:
+                    photo_attachments = [image.attachment_data for image in user.cards_in_hand.all()]
+                    self.send_message(user_id=user.chat_id,
+                                      text=f'Введите корректный номер карты',
+                                      photo_attachments=photo_attachments,
+                                      keyboard=keyboards.get_answers_keyboard(count=len(photo_attachments)))
+                    return
+
+                game.current_images.add(user.sent_card)
+                game.save()
+
+                self.send_message(user_id=user.chat_id, text='Отлично!\n'
+                                                             'Теперь дождитесь пока все сделают свой ход',
+                                  keyboard=keyboards.get_wait_circle_keyboard())
+
+                # отправка всем списка карт
+                if game.current_images.count() >= game.users.filter(is_game_host=False).count():
+                    photo_attachments = [image.attachment_data for image in game.current_images.all()]
+                    random.shuffle(photo_attachments, random.random)
+
+                    for game_user in game.users.all():
+                        if game_user.is_game_host:
+                            # определяем каку юкарту загадали
+                            game.current_correct_answer = \
+                                photo_attachments.index(game_user.sent_card.attachment_data) + 1
+                            self.send_message(user_id=game_user.chat_id,
+                                              text=f'Полученный набор карт',
+                                              photo_attachments=photo_attachments,
+                                              keyboard=keyboards.get_wait_circle_keyboard())
+                        else:
+                            self.send_message(user_id=game_user.chat_id,
+                                              text=f'Отдагайте на какой карте изображено загаданное слово',
+                                              photo_attachments=photo_attachments,
+                                              keyboard=keyboards.get_answers_keyboard(count=len(photo_attachments)))
+                    game.stage = 'getting_answers'
+                    game.save()
+            return
+
         # ==
 
         # ожидание ответа всех игроков
@@ -462,36 +509,60 @@ class VkBot:
             return
         user_answer = int(event_text)
 
-        if user.current_game.current_correct_answer == user_answer:
-            message_text = 'Вы угадали! 🥳\n' \
-                           'Вам начислено 3 балла'
-            user.current_score += 3
-        else:
-            message_text = 'Вы не угадали 🤷‍♂️\n' \
-                           'В этом раунде вы не зарабатываете очков'
+        if game.with_host:
+            if user.answered:
+                self.send_message(user_id=user.chat_id, text='Прекрасно!\n'
+                                                             'Дождитесь, пока все дадут свой ответ',
+                                  keyboard=keyboards.get_answers_keyboard())
+                return
 
-        message_text += f'\n\nВаш счет в этой игре: {user.current_score} ✅'
-        if game.single:
-            self.send_message(user_id=user.chat_id, text=message_text,
-                              keyboard=keyboards.get_next_circle_keyboard())
-        else:
-            self.send_message(user_id=user.chat_id, text=message_text)
-            self.send_message(user_id=user.chat_id, text='Следующий круг начнется, '
-                                                         'когда все игроки ответят',
-                              keyboard=keyboards.get_wait_circle_keyboard())
+            user.answer = user_answer
+            user.answered = True
+            user.save()
 
-        user.answered = True
-        user.save()
+            self.send_message(user_id=user.chat_id, text='Прекрасно!\n'
+                                                         'Осталось подождать, пока все дадут свой ответ',
+                              keyboard=keyboards.get_answers_keyboard())
 
-        if not game.single and game.users.all().count() == game.users.filter(answered=True).count():
-            self.distribution_of_cards_in_game(game=game, users=game.users.all())
+            # если все дали свой ответ
+            if game.users.filter(answered=True).count() >= game.users.exclude(is_game_host=True).count():
+                for game_user in game.users.all():
+                    self.send_message(user_id=game_user.chat_id, text=f'Начисленные баллы в этом круге\n'
+                                                                      f'{get_game_results_table(game=game, user=game_user)}\n\n'
+                                                                      f'Отличная работа 😉')
             return
 
-        if game.single:
-            game.stage = 'distribution_of_cards'
-            game.save()
 
-        return
+
+        else:
+            if user.current_game.current_correct_answer == user_answer:
+                message_text = 'Вы угадали! 🥳\n' \
+                               'Вам начислено 3 балла'
+                user.current_score += 3
+            else:
+                message_text = 'Вы не угадали 🤷‍♂️\n' \
+                               'В этом раунде вы не зарабатываете очков'
+
+            message_text += f'\n\nВаш счет в этой игре: {user.current_score} ✅'
+            if game.single:
+                self.send_message(user_id=user.chat_id, text=message_text,
+                                  keyboard=keyboards.get_next_circle_keyboard())
+            else:
+                self.send_message(user_id=user.chat_id, text=message_text)
+                self.send_message(user_id=user.chat_id, text='Следующий круг начнется, '
+                                                             'когда все игроки ответят',
+                                  keyboard=keyboards.get_wait_circle_keyboard())
+
+            user.answered = True
+            user.save()
+
+            if not game.single and game.users.all().count() == game.users.filter(answered=True).count():
+                self.distribution_of_cards_in_game(game=game, users=game.users.all())
+                return
+
+            if game.single:
+                game.stage = 'distribution_of_cards'
+                game.save()
 
     def distribution_of_cards_in_game(self, game, users, next_circle_text='Следующий круг'):
         game.stage = 'getting_answers'
