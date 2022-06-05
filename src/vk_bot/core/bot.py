@@ -588,9 +588,11 @@ class VkBot:
 
                 if won_user:
                     end_game(game=game)
-                    self.send_message(user_id=won_user.chat_id,
-                                      text=f'Игра завершена!\n'
-                                           f'Победитель: {won_user.name} 🥳')
+                    for game_user in game_users:
+                        self.send_message(user_id=game_user.chat_id,
+                                          text=f'Игра завершена!\n'
+                                               f'Победитель: {won_user.name} 🥳',
+                                          keyboard=keyboards.get_main_menu_keyboard())
 
                     return
 
