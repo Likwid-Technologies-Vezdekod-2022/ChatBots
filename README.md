@@ -1,5 +1,11 @@
 # ChatBots
 
+[Группа чат бота](https://vk.com/public213713593)
+
+
+[Чат бот](https://vk.com/im?peers=c264_-197700721_169584462&sel=-213713593)
+
+
 ### Стэк
 - Python >= 3.9
 - Django
