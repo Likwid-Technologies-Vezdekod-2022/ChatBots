@@ -449,7 +449,8 @@ class VkBot:
         Ожидание подключения игроков
         """
         if event_text.lower() == 'покинуть игру':
-            self.send_message(user_id=user.chat_id, text=f'Вы покинули игру')
+            self.send_message(user_id=user.chat_id, text=f'Вы покинули игру',
+                              keyboard=keyboards.get_main_menu_keyboard())
             if game.users.count() <= 1:
                 end_game(game)
             else:
