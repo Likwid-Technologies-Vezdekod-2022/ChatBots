@@ -564,7 +564,7 @@ class VkBot:
 
                 users_card_answers_table = ''
                 for game_user, score in users_card_answers.items():
-                    users_card_answers_table += f'\n{game_user} {score}'
+                    users_card_answers_table += f'\n{game_user.name} {score}'
 
                 won_user = None
                 for game_user in game_users:
