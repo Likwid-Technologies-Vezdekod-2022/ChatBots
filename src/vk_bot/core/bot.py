@@ -540,7 +540,6 @@ class VkBot:
                     image_user = game_users.get(sent_card=image)
                     answers_count = game_users.exclude(is_game_host=True).filter(answer=answer).count()
 
-                    # количество ответов сомтреть
                     if image_user.is_game_host:
                         host_card_answers_count += answers_count
                     else:
@@ -580,7 +579,7 @@ class VkBot:
                                            f'{get_game_results_table(game=game, user=game_user)}\n\n'
                                            f'Отличная работа 😉')
 
-                    game_user.cards_in_hand.remove(game_user.answer)
+                    game_user.cards_in_hand.remove(game_user.sent_card)
                     game_user.is_game_host = False
                     game_user.answered = False
                     game_user.sent_card = None
@@ -791,7 +790,10 @@ class VkBot:
                                   photo_attachments=photo_attachments,
                                   keyboard=keyboards.get_wait_circle_keyboard())
 
-        game.current_images.remove()
+        game.current_images.set([])
+        game.current_attachment_data = None
+        game.current_correct_answer = None
+        game.current_word = ''
         game.stage = 'game_host_writing_word'
         game.save()
 
