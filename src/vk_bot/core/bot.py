@@ -184,8 +184,6 @@ class VkBot:
                               keyboard=keyboards.get_select_collection_keyboard())
 
         elif event_text.lower() == 'мультиплеер':
-            # self.send_in_development_message(user)
-
             self.send_message(user_id=user.chat_id,
                               text='Мультиплеер',
                               keyboard=keyboards.get_multiplayer_keyboard())
@@ -376,7 +374,6 @@ class VkBot:
                     photo_attachments = [image.attachment_data for image in game_user.cards_in_hand.all()]
                     self.send_message(user_id=game_user.chat_id,
                                       text='Отправьте карту, которая асоциируется у вас с этим словом',
-                                      photo_attachments=photo_attachments,
                                       keyboard=keyboards.get_answers_keyboard(count=len(photo_attachments)))
 
                 game.save()
@@ -406,8 +403,7 @@ class VkBot:
                                                              'Теперь дождитесь пока все сделают свой ход',
                                   keyboard=keyboards.get_wait_circle_keyboard())
 
-                # отправка всем списка карт
-                if game.current_images.count() >= game.users.filter(is_game_host=False).count():
+                if game.current_images.count() - 1 >= game.users.filter(is_game_host=False).count():
                     photo_attachments = [image.attachment_data for image in game.current_images.all()]
                     random.shuffle(photo_attachments, random.random)
                     game.current_attachment_data = photo_attachments
@@ -522,8 +518,7 @@ class VkBot:
             user.save()
 
             self.send_message(user_id=user.chat_id, text='Прекрасно!\n'
-                                                         'Осталось подождать, пока все дадут свой ответ',
-                              keyboard=keyboards.get_answers_keyboard())
+                                                         'Осталось подождать, пока все дадут свой ответ')
 
             # если все дали свой ответ
             if game.users.filter(answered=True).count() >= game.users.exclude(is_game_host=True).count():
