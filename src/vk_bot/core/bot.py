@@ -513,8 +513,7 @@ class VkBot:
 
         if game.with_host:
             if user.answered:
-                self.send_message(user_id=user.chat_id, text='Прекрасно!\n'
-                                                             'Дождитесь, пока все дадут свой ответ',
+                self.send_message(user_id=user.chat_id, text='Дождитесь, пока все дадут свой ответ',
                                   keyboard=keyboards.get_answers_keyboard())
                 return
 
