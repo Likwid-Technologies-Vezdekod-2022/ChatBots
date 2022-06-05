@@ -337,10 +337,19 @@ class VkBot:
                                   keyboard=keyboards.get_main_menu_keyboard())
                 end_game(game)
                 return
-
+        # == игра с ведущим
         if game.stage == 'game_host_writing_word':
             if user.is_game_host:
-                # game.current_correct_answer =
+                try:
+                    user.sent_card = user.cards_in_hand.all()[int(event_text) - 1]
+                    user.save()
+                except:
+                    photo_attachments = [image.attachment_data for image in user.cards_in_hand.all()]
+                    self.send_message(user_id=user.chat_id,
+                                      text=f'Введите корректный номер карты',
+                                      photo_attachments=photo_attachments,
+                                      keyboard=keyboards.get_answers_keyboard(count=len(photo_attachments)))
+                    return
                 self.send_message(user_id=user.chat_id,
                                   text=f'Введите слово, которое обозначет то, что изображено на карте')
                 game.stage = 'sending_word'
@@ -350,7 +359,7 @@ class VkBot:
                                   keyboard=keyboards.get_wait_circle_keyboard())
             return
 
-        if game.stage == 'sending_word':
+        elif game.stage == 'sending_word':
             if user.is_game_host:
                 game.stage = 'send_cards'
                 game.current_word = event_text
@@ -368,6 +377,11 @@ class VkBot:
                                       keyboard=keyboards.get_answers_keyboard(count=len(photo_attachments)))
 
                 game.save()
+            return
+
+        elif game.stage == 'send_cards':
+            pass
+        # ==
 
         # ожидание ответа всех игроков
         if not game.single and user.answered:
@@ -628,7 +642,7 @@ class VkBot:
                 self.send_message(user_id=user.chat_id, text=f'Вы ведущий этого круга\n'
                                                              f'Загадайте одну из своих карт',
                                   photo_attachments=photo_attachments,
-                                  keyboard=keyboards.get_answers_keyboard(count=host.cards_in_hand.count()))
+                                  keyboard=keyboards.get_answers_keyboard(count=len(photo_attachments)))
             else:
                 self.send_message(user_id=user.chat_id, text=f'Ваши карты\n\n'
                                                              f'Дождитесь пока ведущий загадает слово',
