@@ -20,7 +20,7 @@ class Command(BaseCommand):
                 file_name, words = file_data.split('\t')
                 words = words.replace('\n', '').split()
 
-                response = bot.upload.photo_messages(f'data/standard_images/{file_name}')[0]
+                response = bot.upload.photo_messages(os.path.join(BASE_DIR,f'data/standard_images/{file_name}'))[0]
                 owner_id = response['owner_id']
                 photo_id = response['id']
                 access_key = response['access_key']

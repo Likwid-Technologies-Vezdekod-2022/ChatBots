@@ -37,7 +37,13 @@
    ```
    python src/manage.py init_db
    ```
-5. Запустить бота Вк
+   _Если на этом этапе возникнет ошибка, то предварительно нужно загрузить изображения:_
+   
+   ```
+   python src/manage.py upload_images
+   ```
+
+6. Запустить бота Вк
    ```
    python src/manage.py start_vk_bot
    ```
