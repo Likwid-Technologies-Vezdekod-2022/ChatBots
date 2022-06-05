@@ -70,6 +70,7 @@ def get_back_keyboard():
 def get_multiplayer_keyboard():
     button_rows = [
         [KeyBoardButton(text='Создать игру', color=VkKeyboardColor.POSITIVE)],
+        [KeyBoardButton(text='Создать игру с ведущим', color=VkKeyboardColor.POSITIVE)],
         [KeyBoardButton(text='Найти игру')],
         [KeyBoardButton(text='Основное меню', color=VkKeyboardColor.SECONDARY)]
     ]

@@ -14,6 +14,13 @@ class GameCircle:
     word: str
 
 
+# @dataclass()
+# class GameCircleWithHost:
+#     attachment_data: list
+#     word: str
+#     ho
+
+
 class GameProcess:
     def __init__(self, game: models.Game):
         self.game = game
@@ -67,11 +74,11 @@ class GameProcess:
 
         i = 0
         for user in users:
-            dealt_images = images[i + users_count]
-            user.cards_in_hand = dealt_images
+            dealt_images = images[i: i + users_count]
+            user.cards_in_hand.set(dealt_images)
             self.game.used_images.add(*dealt_images)
 
-            i += 1
+            i += i + users_count
 
     def start_circle_with_host(self, ) -> Union[GameCircle, None]:
         images = self.game.collection.images.order_by('?')

@@ -229,6 +229,15 @@ class VkBot:
                               text='Выберите коллекцию изображений',
                               keyboard=keyboards.get_select_collection_keyboard())
 
+        elif event_text.lower() == 'создать игру с ведущим':
+            user.current_game = models.Game.objects.create(single=False, with_host=True, status='creating',
+                                                           stage='getting_answers',
+                                                           creator=user)
+            user.save()
+            self.send_message(user_id=user.chat_id,
+                              text='Выберите коллекцию изображений',
+                              keyboard=keyboards.get_select_collection_keyboard())
+
         elif event_text.lower() == 'стандартная':
             collection = models.Collection.objects.filter(standard=True).first()
             if user.current_game.single:
@@ -329,6 +338,37 @@ class VkBot:
                 end_game(game)
                 return
 
+        if game.stage == 'game_host_writing_word':
+            if user.is_game_host:
+                # game.current_correct_answer =
+                self.send_message(user_id=user.chat_id,
+                                  text=f'Введите слово, которое обозначет то, что изображено на карте')
+                game.stage = 'sending_word'
+                game.save()
+            else:
+                self.send_message(user_id=user.chat_id, text='Дождитесь пока ведущий загадает слово',
+                                  keyboard=keyboards.get_wait_circle_keyboard())
+            return
+
+        if game.stage == 'sending_word':
+            if user.is_game_host:
+                game.stage = 'send_cards'
+                game.current_word = event_text
+
+                self.send_message(user_id=user.chat_id, text='Отлично!\n'
+                                                             'Теперь дождитесь пока все сделают свой ход')
+
+                for game_user in game.users.exclude(is_game_host=True):
+                    self.send_message(user_id=game_user.chat_id,
+                                      text=f'Ведущий загадал: {game.current_word}')
+                    photo_attachments = [image.attachment_data for image in game_user.cards_in_hand.all()]
+                    self.send_message(user_id=game_user.chat_id,
+                                      text='Отправьте карту, которая асоциируется у вас с этим словом',
+                                      photo_attachments=photo_attachments,
+                                      keyboard=keyboards.get_answers_keyboard(count=len(photo_attachments)))
+
+                game.save()
+
         # ожидание ответа всех игроков
         if not game.single and user.answered:
             self.send_message(user_id=user.chat_id, text='Следующий круг начнется, '
@@ -362,9 +402,13 @@ class VkBot:
         elif event_text.lower() == 'начать игру':
             game.status = 'started'
             game.save()
-            self.distribution_of_cards_in_game(game=game, users=game.users.all(), next_circle_text='Игра началась!')
+            if game.with_host:
+                game_process = GameProcess(game=game)
+                game_process.init_game_with_host()
+                self.game_host_move(game=game, start_game=True)
+            else:
+                self.distribution_of_cards_in_game(game=game, users=game.users.all(), next_circle_text='Игра началась!')
             return
-        return
 
     def invite_person_by_link(self, game, user, inviting_person_url: str):
         """
@@ -563,6 +607,45 @@ class VkBot:
 
             self.send_message(user_id=game.creator.chat_id, text=f'К игре подключился {user.name}',
                               keyboard=keyboards.get_start_multiplayer_game_keyboard())
+
+    def game_host_move(self, game: models.Game, start_game=False):
+        game_users = game.users.all()
+        host = game.users.filter(was_game_circle_host=False).first()
+        if not host:
+            game.users.update(was_game_circle_host=False)
+            host = game_users.first()
+        host.is_game_host = True
+        host.was_game_circle_host = True
+        host.save()
+
+        for user in game_users:
+            if start_game:
+                self.send_message(user_id=user.chat_id, text='Игра началась!')
+
+            photo_attachments = [image.attachment_data for image in user.cards_in_hand.all()]
+
+            if user == host:
+                self.send_message(user_id=user.chat_id, text=f'Вы ведущий этого круга\n'
+                                                             f'Загадайте одну из своих карт',
+                                  photo_attachments=photo_attachments,
+                                  keyboard=keyboards.get_answers_keyboard(count=host.cards_in_hand.count()))
+            else:
+                self.send_message(user_id=user.chat_id, text=f'Ваши карты\n\n'
+                                                             f'Дождитесь пока ведущий загадает слово',
+                                  photo_attachments=photo_attachments,
+                                  keyboard=keyboards.get_wait_circle_keyboard())
+
+        game.stage = 'game_host_writing_word'
+        game.save()
+
+    def game_host_writing_word(self, game: models.Game, host):
+        host = game.users.filter(is_game_host=True).first()
+        if not host:
+            self.game_host_move(host)
+        self.send_message(user_id=host.chat_id, text=f'Введите слово, которое обозначет то, что изображено на карте')
+
+    def distribution_of_cards_in_game_with_host(self, game, event_text):
+        pass
 
 
 bot = VkBot(VK_BOT_TOKEN)

@@ -78,7 +78,10 @@ class Game(models.Model):
 
     creator = models.ForeignKey('VkUser', on_delete=models.PROTECT, related_name='created_games')
 
-    stage = models.CharField(choices=[('getting_answers', 'getting_answers'),
+    stage = models.CharField(choices=[('game_host_writing_word', 'game_host_writing_word'),
+                                      ('sending_word', 'sending a word'),
+                                      ('send_cards', 'send_cards'),
+                                      ('getting_answers', 'getting_answers'),
                                       ('distribution_of_cards', 'distribution_of_cards')],
                              default='distribution_of_cards', max_length=400)
 
