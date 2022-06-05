@@ -409,6 +409,7 @@ class VkBot:
                 if game.current_images.count() >= game.users.filter(is_game_host=False).count():
                     photo_attachments = [image.attachment_data for image in game.current_images.all()]
                     random.shuffle(photo_attachments, random.random)
+                    game.current_attachment_data = photo_attachments
 
                     for game_user in game.users.all():
                         if game_user.is_game_host:
@@ -526,10 +527,54 @@ class VkBot:
 
             # если все дали свой ответ
             if game.users.filter(answered=True).count() >= game.users.exclude(is_game_host=True).count():
-                for game_user in game.users.all():
-                    self.send_message(user_id=game_user.chat_id, text=f'Начисленные баллы в этом круге\n'
-                                                                      f'{get_game_results_table(game=game, user=game_user)}\n\n'
-                                                                      f'Отличная работа 😉')
+                game_users = game.users.all()
+                game_current_attachment_data = game.current_attachment_data
+
+                host_card_answers_count = 0
+                users_card_answers = {}
+
+                for attachment_data, answer in zip(game_current_attachment_data,
+                                                   range(1, len(game_current_attachment_data) + 1)):
+
+                    image = models.Image.objects.get(attachment_data=attachment_data)
+                    image_user = game_users.get(sent_card=image)
+                    answers_count = game_users.exclude(is_game_host=True).filter(answer=answer).count()
+
+                    # количество ответов сомтреть
+                    if image_user.is_game_host:
+                        host_card_answers_count += answers_count
+                    else:
+                        if not users_card_answers.get(image_user):
+                            users_card_answers[image_user] = 0
+                        users_card_answers[image_user] += answers_count
+
+                if host_card_answers_count == 0 \
+                        or host_card_answers_count >= game_users.exclude(is_game_host=True).count():
+                    for game_user in game_users:
+                        if game_user.is_game_host:
+                            users_card_answers[game_user] = 0
+                            continue
+                        game_user.current_score += 2
+                        users_card_answers[game_user] = 2
+                        game_user.save()
+                else:
+                    for game_user in game_users:
+                        if game_user.is_game_host:
+                            game_user.current_score += 2
+                            users_card_answers[game_user] = 2
+                        else:
+                            game_user.current_score += users_card_answers[game_user]
+                        game_user.save()
+
+                users_card_answers_table = ''
+                for game_user, score in users_card_answers.items():
+                    users_card_answers_table += f'\n{game_user} {score}'
+
+                for game_user in game_users:
+                    self.send_message(user_id=game_user.chat_id,
+                                      text=f'Баллы в этом круге:\n {users_card_answers_table}\n\n'
+                                           f'{get_game_results_table(game=game, user=game_user)}\n\n'
+                                           f'Отличная работа 😉')
             return
 
 
