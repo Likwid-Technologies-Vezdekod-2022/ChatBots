@@ -60,6 +60,56 @@ class GameProcess:
         return GameCircle(attachment_data=self.game.current_attachment_data,
                           word=f'Загаданное слово: {self.game.current_word}')
 
+    def init_game_with_host(self):
+        users = self.game.users.all()
+        users_count = users.count()
+        images = self.game.collection.images.order_by('?')
+
+        i = 0
+        for user in users:
+            dealt_images = images[i + users_count]
+            user.cards_in_hand = dealt_images
+            self.game.used_images.add(*dealt_images)
+
+            i += 1
+
+    def start_circle_with_host(self, ) -> Union[GameCircle, None]:
+        images = self.game.collection.images.order_by('?')
+        used_images_ids = self.game.used_images.values_list('id', flat=True)
+        if used_images_ids:
+            images = images.exclude(id__in=used_images_ids)
+
+        if not images:
+            return
+
+        words = images.values_list('words__name', flat=True).distinct()
+        right_word = random.choice(words)
+
+        other_images = images.filter(~Q(words__name=right_word))[:4]
+        right_image: models.Image = images.filter(words__name=right_word).first()
+
+        self.game.used_images.add(*other_images)
+        self.game.used_images.add(right_image)
+
+        current_images = [right_image] + list(other_images)
+        self.game.current_images.set(current_images)
+
+        attachment_data = [image.attachment_data for image in current_images]
+        random.shuffle(attachment_data, random.random)
+
+        if len(attachment_data) < 5:
+            return
+
+        self.game.current_attachment_data = attachment_data
+        self.game.current_word = right_word
+        self.game.current_correct_answer = attachment_data.index(right_image.attachment_data) + 1
+        logger.info(f'game: {self.game.id}, current_correct_answer: {self.game.current_correct_answer}')
+
+        self.game.stage = 'getting_answers'
+        self.game.save()
+
+        return GameCircle(attachment_data=attachment_data, word=f'Загаданное слово: {right_word}')
+
 
 def clear_user_game_data(user: models.VkUser):
     user.current_game = None
