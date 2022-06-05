@@ -9,8 +9,8 @@ class KeyBoardButton:
     color: VkKeyboardColor = VkKeyboardColor.PRIMARY
 
 
-def get_keyboard(button_rows: list[list[KeyBoardButton]], inline=False):
-    keyboard = VkKeyboard(inline=inline)
+def get_keyboard(button_rows: list[list[KeyBoardButton]], inline=False, one_time=False):
+    keyboard = VkKeyboard(inline=inline, one_time=one_time)
     for row in button_rows:
         for button in row:
             keyboard.add_button(label=button.text, color=button.color)
@@ -31,7 +31,7 @@ def get_answers_keyboard(count=5):
     if row:
         button_rows.append(row)
 
-    return get_keyboard(button_rows)
+    return get_keyboard(button_rows, one_time=True)
 
 
 def get_next_circle_keyboard():

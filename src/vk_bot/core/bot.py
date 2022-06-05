@@ -1,6 +1,7 @@
 import random
 import time
 import traceback
+from datetime import datetime
 
 import vk_api
 from vk_api import VkUpload
@@ -46,7 +47,7 @@ class VkBot:
         values = {
             'user_id': user_id,
             'message': text,
-            'random_id': random.randint(0, 2048)
+            'random_id': int(datetime.now().strftime('%y%m%d%H%S%f'))
         }
 
         if keyboard:
